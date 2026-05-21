@@ -1,15 +1,23 @@
-import { Button, CellAction, CellList, Counter, Flex, Typography } from '@maxhub/max-ui'
+import { Button, CellAction, CellList, Counter, Flex, Panel, Typography } from '@maxhub/max-ui'
 import { useNavigate } from 'react-router-dom'
-import { useSessionQuery } from '../../features/auth/session'
+import { useQueryClient } from '@tanstack/react-query'
+import { useSessionQuery, sessionKeys } from '../../features/auth/session'
 import { useAdminQueueQuery } from '../../features/request/queries'
 import { AppScreen } from '../../shared/ui/AppScreen'
 
 export function HomePage() {
   const nav = useNavigate()
+  const qc = useQueryClient()
   const { data } = useSessionQuery()
   const role = data?.role
   const isAdmin = role === 'admin' || role === 'tech_admin'
   const queue = useAdminQueueQuery({ enabled: isAdmin })
+
+  const toggleRole = async () => {
+    const nextRole = role === 'initiator' ? 'admin' : 'initiator'
+    localStorage.setItem('MOCK_ROLE', nextRole)
+    await qc.invalidateQueries({ queryKey: sessionKeys.session })
+  }
 
   return (
     <AppScreen title="Бюро пропусков">
@@ -39,9 +47,14 @@ export function HomePage() {
         ) : null}
       </CellList>
       <Flex direction="column" gap={8}>
-        <Typography.Label variant="medium">
-          Подсказка: роль в моках задаётся в .env (VITE_MOCK_ROLE).
-        </Typography.Label>
+        <Panel mode="secondary" style={{ padding: 12, borderRadius: 12 }}>
+          <Flex direction="column" gap={8} align="center">
+            <Typography.Label variant="medium">Панель отладки</Typography.Label>
+            <Button size="small" mode="secondary" onClick={toggleRole}>
+              Сменить роль на {role === 'initiator' ? 'Инженер ИБ' : 'Инициатор'}
+            </Button>
+          </Flex>
+        </Panel>
         <Button mode="tertiary" onClick={() => nav('/onboarding')}>
           К экрану согласия
         </Button>

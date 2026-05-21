@@ -1,4 +1,4 @@
-import { Button, CellAction, CellList, Flex, Input, Textarea, Typography } from '@maxhub/max-ui'
+import { Button, CellList, CellSimple, Flex, Input, Panel, Textarea, Typography } from '@maxhub/max-ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -19,6 +19,15 @@ import { AppScreen } from '../../shared/ui/AppScreen'
 
 const STEPS = ['guest', 'date', 'time', 'zone', 'purpose', 'confirm'] as const
 type Step = (typeof STEPS)[number]
+
+const STEP_FIELD_NAMES: Record<Step, string> = {
+  guest: 'ФИО гостя',
+  date: 'Дата визита',
+  time: 'Время визита',
+  zone: 'Зона / корпус',
+  purpose: 'Цель визита',
+  confirm: 'Данные заявки',
+}
 
 function isStep(s: string | undefined): s is Step {
   return !!s && (STEPS as readonly string[]).includes(s)
@@ -151,9 +160,6 @@ export function NewRequestPage() {
       title={title}
       footer={
         <Flex direction="column" gap={8}>
-          {fieldError ? (
-            <Typography.Body variant="small">{fieldError}</Typography.Body>
-          ) : null}
           {step === 'confirm' ? (
             <>
               <Button mode="primary" loading={createMut.isPending} onClick={submit}>
@@ -179,12 +185,31 @@ export function NewRequestPage() {
         </Flex>
       }
     >
+      {fieldError && (
+        <Panel mode="secondary" style={{ border: '1px solid #ff4d4f', background: 'rgba(255, 77, 79, 0.05)', borderRadius: 12 }}>
+          <Flex direction="column" gap={8} style={{ padding: 12 }} align="center">
+            <Typography.Body style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+              Ошибка в шаге «{STEP_FIELD_NAMES[step]}»
+            </Typography.Body>
+            <Typography.Body style={{ color: '#ff4d4f', textAlign: 'center' }}>
+              {fieldError}
+            </Typography.Body>
+            <Button size="small" mode="secondary" onClick={() => setFieldError(null)}>
+              Исправить
+            </Button>
+          </Flex>
+        </Panel>
+      )}
+
       {step === 'guest' ? (
         <Flex direction="column" gap={8}>
           <Typography.Body>ФИО гостя</Typography.Body>
           <Input
             value={draft.guestFullName}
-            onChange={(e) => patch({ guestFullName: e.target.value })}
+            onChange={(e) => {
+              setFieldError(null)
+              patch({ guestFullName: e.target.value })
+            }}
             placeholder="Иванов Иван Иванович"
           />
         </Flex>
@@ -196,7 +221,10 @@ export function NewRequestPage() {
           <Input
             type="date"
             value={draft.visitDate}
-            onChange={(e) => patch({ visitDate: e.target.value })}
+            onChange={(e) => {
+              setFieldError(null)
+              patch({ visitDate: e.target.value })
+            }}
           />
         </Flex>
       ) : null}
@@ -206,13 +234,16 @@ export function NewRequestPage() {
           <Typography.Body>Время</Typography.Body>
           <CellList mode="island">
             {VISIT_TIME_OPTIONS.map((o) => (
-              <CellAction
+              <CellSimple
+                as="button"
                 key={o.value}
-                onClick={() => patch({ visitTime: o.value })}
-                mode={draft.visitTime === o.value ? 'primary' : 'custom'}
-              >
-                {o.label}
-              </CellAction>
+                onClick={() => {
+                  setFieldError(null)
+                  patch({ visitTime: o.value })
+                }}
+                title={o.label}
+                after={draft.visitTime === o.value ? <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--max-ui-accent, #aa3bff)' }} /> : null}
+              />
             ))}
           </CellList>
         </Flex>
@@ -225,13 +256,16 @@ export function NewRequestPage() {
           {zones.data ? (
             <CellList mode="island">
               {zones.data.map((z) => (
-                <CellAction
+                <CellSimple
+                  as="button"
                   key={z.id}
-                  onClick={() => patch({ zoneId: z.id })}
-                  mode={draft.zoneId === z.id ? 'primary' : 'custom'}
-                >
-                  {z.title}
-                </CellAction>
+                  onClick={() => {
+                    setFieldError(null)
+                    patch({ zoneId: z.id })
+                  }}
+                  title={z.title}
+                  after={draft.zoneId === z.id ? <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--max-ui-accent, #aa3bff)' }} /> : null}
+                />
               ))}
             </CellList>
           ) : null}
@@ -243,7 +277,10 @@ export function NewRequestPage() {
           <Typography.Body>Цель визита</Typography.Body>
           <Textarea
             value={draft.purpose}
-            onChange={(e) => patch({ purpose: e.target.value })}
+            onChange={(e) => {
+              setFieldError(null)
+              patch({ purpose: e.target.value })
+            }}
             placeholder="Кратко опишите цель"
           />
         </Flex>
@@ -252,16 +289,21 @@ export function NewRequestPage() {
       {step === 'confirm' ? (
         <Flex direction="column" gap={8}>
           <Typography.Title>Сводка</Typography.Title>
-          <Typography.Body>Гость: {draft.guestFullName}</Typography.Body>
-          <Typography.Body>Дата: {draft.visitDate}</Typography.Body>
-          <Typography.Body>
-            Время:{' '}
-            {VISIT_TIME_OPTIONS.find((x) => x.value === draft.visitTime)?.label ?? draft.visitTime}
-          </Typography.Body>
-          <Typography.Body>
-            Зона: {zones.data?.find((z) => z.id === draft.zoneId)?.title ?? draft.zoneId}
-          </Typography.Body>
-          <Typography.Body>Цель: {draft.purpose}</Typography.Body>
+          <Panel mode="primary">
+            <Flex direction="column" gap={0}>
+              <CellSimple title="Гость" subtitle={draft.guestFullName} />
+              <CellSimple title="Дата" subtitle={draft.visitDate} />
+              <CellSimple
+                title="Время"
+                subtitle={VISIT_TIME_OPTIONS.find((x) => x.value === draft.visitTime)?.label ?? draft.visitTime}
+              />
+              <CellSimple
+                title="Зона"
+                subtitle={zones.data?.find((z) => z.id === draft.zoneId)?.title ?? draft.zoneId}
+              />
+              <CellSimple title="Цель" subtitle={draft.purpose} />
+            </Flex>
+          </Panel>
         </Flex>
       ) : null}
     </AppScreen>

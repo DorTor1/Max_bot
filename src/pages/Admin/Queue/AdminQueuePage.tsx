@@ -1,4 +1,4 @@
-import { CellAction, CellList, Counter, Typography } from '@maxhub/max-ui'
+import { CellList, CellSimple, Counter, Typography } from '@maxhub/max-ui'
 import { useNavigate } from 'react-router-dom'
 import { useAdminQueueQuery } from '../../../features/request/queries'
 import { formatRuDate } from '../../../shared/lib/dates'
@@ -10,7 +10,7 @@ export function AdminQueuePage() {
 
   return (
     <AppScreen title="Очередь ИБ">
-      <Typography.Body variant="small">
+      <Typography.Body variant="small" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         В очереди: <Counter value={q.data?.length ?? 0} />
       </Typography.Body>
       {q.isLoading ? <Typography.Body>Загрузка…</Typography.Body> : null}
@@ -21,13 +21,20 @@ export function AdminQueuePage() {
       {q.data && q.data.length > 0 ? (
         <CellList mode="island">
           {q.data.map((r) => (
-            <CellAction
+            <CellSimple
+              as="button"
               key={r.id}
               onClick={() => nav(`/admin/requests/${r.id}`)}
               showChevron
-            >
-              {r.number} · {r.guestFullName} · {formatRuDate(r.visitDate)} · {r.zone}
-            </CellAction>
+              title={r.guestFullName}
+              subtitle={`${r.number} · ${formatRuDate(r.visitDate)}`}
+              overline={`Инициатор: ${r.initiator.displayName}`}
+              after={
+                <Typography.Label variant="medium-strong">
+                  {r.zone}
+                </Typography.Label>
+              }
+            />
           ))}
         </CellList>
       ) : null}

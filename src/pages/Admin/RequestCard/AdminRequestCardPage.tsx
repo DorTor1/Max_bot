@@ -29,6 +29,7 @@ export function AdminRequestCardPage() {
   const [reason, setReason] = useState<RejectReason>('INVALID_DATA')
   const [commentReject, setCommentReject] = useState('')
   const [question, setQuestion] = useState('')
+  const [activeAction, setActiveAction] = useState<'approve' | 'reject' | 'clarify'>('approve')
 
   const inv = async () => {
     await qc.invalidateQueries({ queryKey: requestKeys.one(id!) })
@@ -97,51 +98,107 @@ export function AdminRequestCardPage() {
 
       {pending ? (
         <Panel mode="secondary">
-          <Flex direction="column" gap={12} style={{ padding: 12 }}>
-            <Typography.Title>Действия</Typography.Title>
-            <Input
-              placeholder="Комментарий (при одобрении)"
-              value={commentApprove}
-              onChange={(e) => setCommentApprove(e.target.value)}
-            />
-            <Button mode="primary" loading={approve.isPending} onClick={() => approve.mutate()}>
-              Подтвердить
-            </Button>
-            <Typography.Title>Отклонить</Typography.Title>
-            <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value as RejectReason)}
-              style={{ padding: 8, borderRadius: 8 }}
-            >
-              {REJECT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <Input
-              placeholder="Комментарий (необязательно)"
-              value={commentReject}
-              onChange={(e) => setCommentReject(e.target.value)}
-            />
-            <Button
-              mode="primary"
-              appearance="negative"
-              loading={reject.isPending}
-              onClick={() => reject.mutate()}
-            >
-              Отклонить
-            </Button>
-            <Typography.Title>Запросить уточнение</Typography.Title>
-            <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} />
-            <Button
-              mode="secondary"
-              loading={clarify.isPending}
-              disabled={question.trim().length < 3}
-              onClick={() => clarify.mutate()}
-            >
-              Отправить вопрос
-            </Button>
+          <Flex direction="column" gap={16} style={{ padding: 12 }}>
+            <Typography.Title>Действия ИБ</Typography.Title>
+            
+            <Flex direction="row" gap={8} style={{ width: '100%' }}>
+              <Button
+                size="small"
+                stretched
+                mode={activeAction === 'approve' ? 'primary' : 'secondary'}
+                onClick={() => setActiveAction('approve')}
+              >
+                Одобрить
+              </Button>
+              <Button
+                size="small"
+                stretched
+                mode={activeAction === 'reject' ? 'primary' : 'secondary'}
+                onClick={() => setActiveAction('reject')}
+              >
+                Отклонить
+              </Button>
+              <Button
+                size="small"
+                stretched
+                mode={activeAction === 'clarify' ? 'primary' : 'secondary'}
+                onClick={() => setActiveAction('clarify')}
+              >
+                Уточнить
+              </Button>
+            </Flex>
+
+            {activeAction === 'approve' && (
+              <Flex direction="column" gap={12}>
+                <Input
+                  placeholder="Комментарий к одобрению (необязательно)"
+                  value={commentApprove}
+                  onChange={(e) => setCommentApprove(e.target.value)}
+                />
+                <Button mode="primary" loading={approve.isPending} onClick={() => approve.mutate()}>
+                  Одобрить пропуск
+                </Button>
+              </Flex>
+            )}
+
+            {activeAction === 'reject' && (
+              <Flex direction="column" gap={12}>
+                <Typography.Label variant="medium-strong">Причина отклонения</Typography.Label>
+                <select
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value as RejectReason)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--max-ui-border, #ccc)',
+                    background: 'var(--max-ui-bg, #fff)',
+                    color: 'var(--max-ui-text, #000)',
+                    fontSize: 16,
+                    outline: 'none',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {REJECT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  placeholder="Комментарий к отклонению (необязательно)"
+                  value={commentReject}
+                  onChange={(e) => setCommentReject(e.target.value)}
+                />
+                <Button
+                  mode="primary"
+                  appearance="negative"
+                  loading={reject.isPending}
+                  onClick={() => reject.mutate()}
+                >
+                  Отклонить заявку
+                </Button>
+              </Flex>
+            )}
+
+            {activeAction === 'clarify' && (
+              <Flex direction="column" gap={12}>
+                <Typography.Label variant="medium-strong">Вопрос инициатору</Typography.Label>
+                <Textarea
+                  placeholder="Укажите, какие сведения необходимо уточнить"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                />
+                <Button
+                  mode="primary"
+                  loading={clarify.isPending}
+                  disabled={question.trim().length < 3}
+                  onClick={() => clarify.mutate()}
+                >
+                  Запросить уточнение
+                </Button>
+              </Flex>
+            )}
           </Flex>
         </Panel>
       ) : null}

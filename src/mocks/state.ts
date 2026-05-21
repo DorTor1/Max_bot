@@ -15,6 +15,10 @@ const auditByRequest = new Map<string, AuditEvent[]>()
 let seq = 100
 
 export function mockRole(): Role {
+  const saved = localStorage.getItem('MOCK_ROLE') as Role | null
+  if (saved === 'admin' || saved === 'tech_admin' || saved === 'initiator') {
+    return saved
+  }
   const r = import.meta.env.VITE_MOCK_ROLE
   if (r === 'admin' || r === 'tech_admin') return r
   return 'initiator'

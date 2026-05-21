@@ -1,4 +1,4 @@
-import { CellAction, CellList, Typography } from '@maxhub/max-ui'
+import { CellList, CellSimple, Dot, Flex, Typography } from '@maxhub/max-ui'
 import { useNavigate } from 'react-router-dom'
 import { useMyRequestsQuery } from '../../features/request/queries'
 import { formatRuDate } from '../../shared/lib/dates'
@@ -19,13 +19,32 @@ export function MyRequestsPage() {
       {q.data && q.data.length > 0 ? (
         <CellList mode="island">
           {q.data.map((r) => (
-            <CellAction
+            <CellSimple
+              as="button"
               key={r.id}
               onClick={() => nav(`/requests/${r.id}`)}
               showChevron
-            >
-              {r.number} · {formatRuDate(r.visitDate)} · {requestStatusLabel(r.status)}
-            </CellAction>
+              title={r.number}
+              subtitle={`${r.guestFullName} · ${formatRuDate(r.visitDate)}`}
+              after={
+                <Flex align="center" gap={8}>
+                  <Typography.Label variant="medium-strong">
+                    {requestStatusLabel(r.status)}
+                  </Typography.Label>
+                  <Dot
+                    appearance={
+                      r.status === 'approved'
+                        ? 'themed'
+                        : r.status === 'rejected'
+                          ? 'accent-red'
+                          : r.status === 'pending' || r.status === 'clarification'
+                            ? 'themed'
+                            : 'neutral-fade'
+                    }
+                  />
+                </Flex>
+              }
+            />
           ))}
         </CellList>
       ) : null}
