@@ -1,0 +1,47 @@
+# Зависимости и сборка фронта (бэкендеру не нужны)
+node_modules/
+dist/
+dist-ssr/
+
+# Секреты и локальные env
+.env
+.env.local
+.env.*.local
+*.local
+
+# Cursor / агентские планы и настройки IDE (не для репозитория)
+.cursor/
+
+# Кэш и временные файлы инструментов
+.vite/
+*.tsbuildinfo
+.eslintcache
+coverage/
+.turbo/
+.cache/
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ОС
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Редакторы
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~

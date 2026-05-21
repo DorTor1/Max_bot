@@ -1,0 +1,639 @@
+openapi: 3.0.3
+info:
+  title: Электронное бюро пропусков (MAX mini-app)
+  version: 1.0.0
+  description: |
+    Контракт API для мини-приложения гостевых пропусков.
+    Ошибки — единый формат `Error` с HTTP 400/401/403/404/409.
+
+servers:
+  - url: /
+    description: Относительный базовый URL (мини-приложение)
+
+paths:
+  /health:
+    get:
+      summary: Проверка доступности
+      operationId: healthCheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /auth/session:
+    post:
+      summary: Установить сессию пользователя (данные из MAX SDK) и получить роль
+      operationId: authSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Профиль и роль с сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /consent:
+    post:
+      summary: Зафиксировать согласие с политикой
+      operationId: postConsent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: string
+      responses:
+        '204':
+          description: Согласие сохранено
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /zones:
+    get:
+      summary: Справочник зон/корпусов
+      operationId: listZones
+      responses:
+        '200':
+          description: Список зон
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Zone'
+
+  /requests:
+    get:
+      summary: Список заявок (инициатор — свои)
+      operationId: listRequests
+      parameters:
+        - name: mine
+          in: query
+          required: true
+          schema:
+            type: boolean
+          description: Должно быть true для списка текущего пользователя
+      responses:
+        '200':
+          description: Заявки
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Создать заявку
+      operationId: createRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRequestBody'
+      responses:
+        '200':
+          description: Созданная заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /requests/{id}:
+    get:
+      summary: Карточка заявки
+      operationId: getRequest
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /requests/{id}/cancel:
+    post:
+      summary: Отменить заявку (инициатор, pending или clarification)
+      operationId: cancelRequest
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Обновлённая заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /requests/{id}/clarification/answer:
+    post:
+      summary: Ответ инициатора на уточнение
+      operationId: answerClarification
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Заявка снова на рассмотрении
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /requests/{id}/audit:
+    get:
+      summary: Лента аудита по заявке
+      operationId: getRequestAudit
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: События (от старых к новым или на усмотрение бэка — фронт сортирует по дате)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/requests:
+    get:
+      summary: Очередь заявок ИБ
+      operationId: adminListRequests
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/RequestStatus'
+      responses:
+        '200':
+          description: Заявки
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/requests/{id}/approve:
+    post:
+      summary: Подтвердить пропуск
+      operationId: adminApprove
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /admin/requests/{id}/reject:
+    post:
+      summary: Отклонить заявку
+      operationId: adminReject
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reasonCode]
+              properties:
+                reasonCode:
+                  $ref: '#/components/schemas/RejectReason'
+                comment:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /admin/requests/{id}/clarify:
+    post:
+      summary: Запросить уточнение у инициатора
+      operationId: adminClarify
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+                  minLength: 3
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /admin/requests/{id}/close:
+    post:
+      summary: Закрыть заявку (после approved/rejected)
+      operationId: adminClose
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  parameters:
+    RequestId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Нет прав
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Не найдено
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Конфликт состояния (например, неверный статус)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        field:
+          type: string
+
+    User:
+      type: object
+      required: [id, displayName]
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+
+    Role:
+      type: string
+      enum: [initiator, admin, tech_admin]
+
+    ConsentInfo:
+      type: object
+      required: [required, version]
+      properties:
+        required:
+          type: boolean
+          description: Нужно ли принять согласие текущей версии
+        version:
+          type: string
+          description: Актуальная версия текста согласия
+
+    Session:
+      type: object
+      required: [user, role, consent]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        role:
+          $ref: '#/components/schemas/Role'
+        consent:
+          $ref: '#/components/schemas/ConsentInfo'
+
+    Zone:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+
+    RequestStatus:
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+        - clarification
+        - cancelled
+        - closed
+
+    VisitTime:
+      type: string
+      enum: [morning, day, evening]
+
+    RejectReason:
+      type: string
+      enum:
+        - INVALID_DATA
+        - SECURITY_POLICY
+        - DUPLICATE
+        - OTHER
+
+    InitiatorRef:
+      type: object
+      required: [id, displayName]
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+
+    Decision:
+      type: object
+      required: [byId, byName]
+      properties:
+        byId:
+          type: string
+        byName:
+          type: string
+        comment:
+          type: string
+        reason:
+          $ref: '#/components/schemas/RejectReason'
+
+    Clarification:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+
+    Request:
+      type: object
+      required:
+        - id
+        - number
+        - guestFullName
+        - visitDate
+        - visitTime
+        - zoneId
+        - zone
+        - purpose
+        - status
+        - initiator
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+          description: Человекочитаемый номер, напр. GP-2026-000123
+        guestFullName:
+          type: string
+        visitDate:
+          type: string
+          format: date
+        visitTime:
+          $ref: '#/components/schemas/VisitTime'
+        zoneId:
+          type: string
+        zone:
+          type: string
+          description: Отображаемое название зоны
+        purpose:
+          type: string
+        status:
+          $ref: '#/components/schemas/RequestStatus'
+        initiator:
+          $ref: '#/components/schemas/InitiatorRef'
+        decision:
+          $ref: '#/components/schemas/Decision'
+        clarification:
+          $ref: '#/components/schemas/Clarification'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateRequestBody:
+      type: object
+      required: [guestFullName, visitDate, visitTime, zoneId, purpose]
+      properties:
+        guestFullName:
+          type: string
+          minLength: 2
+          maxLength: 120
+        visitDate:
+          type: string
+          format: date
+        visitTime:
+          $ref: '#/components/schemas/VisitTime'
+        zoneId:
+          type: string
+        purpose:
+          type: string
+          minLength: 3
+          maxLength: 500
+
+    AuditEventType:
+      type: string
+      enum:
+        - created
+        - submitted
+        - approved
+        - rejected
+        - clarification_requested
+        - clarification_answered
+        - cancelled
+        - closed
+
+    AuditEvent:
+      type: object
+      required: [id, requestId, type, actorId, actorName, payload, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        requestId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/AuditEventType'
+        actorId:
+          type: string
+        actorName:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+          description: Краткие нечувствительные метаданные для отображения
+        createdAt:
+          type: string
+          format: date-time
