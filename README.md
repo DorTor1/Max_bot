@@ -23,11 +23,6 @@ npm run dev
 | `npm run lint` | ESLint |
 | `npm run generate:api` | Генерация `src/shared/api/schema.d.ts` из `openapi.yaml` (`openapi-typescript`) |
 
-## Передача бэкендеру
-
-1. Отдайте файл **`openapi.yaml`** — это согласованный контракт (эндпоинты, схемы, коды ошибок).
-2. Зафиксируйте открытые вопросы из плана (формат номера, список причин отклонения, поллинг и т.д.).
-
 ## Допущения (зафиксировано в моках)
 
 - Номер заявки: **`GP-YYYY-NNNNNN`** (см. мок `allocateNumber` / ответ `POST /requests`).
