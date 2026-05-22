@@ -102,7 +102,11 @@ export function RequestDetailsPage() {
       {r.status === 'clarification' && !r.clarification?.answer ? (
         <Flex direction="column" gap={8}>
           <Typography.Title>Ответ на уточнение</Typography.Title>
-          <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Ваш ответ" />
+          <Textarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="Ваш ответ"
+          />
           <Button
             mode="primary"
             loading={answerMut.isPending}
@@ -121,7 +125,9 @@ export function RequestDetailsPage() {
               {r.decision.byName}
               {r.decision.reason ? ` · ${r.decision.reason}` : ''}
             </Typography.Body>
-            {r.decision.comment ? <Typography.Body variant="small">{r.decision.comment}</Typography.Body> : null}
+            {r.decision.comment ? (
+              <Typography.Body variant="small">{r.decision.comment}</Typography.Body>
+            ) : null}
           </Flex>
         </Panel>
       ) : null}

@@ -17,7 +17,11 @@ export function AppScreen({
         <Flex direction="column" gap={12} style={{ flex: 1 }}>
           {children}
         </Flex>
-        {footer ? <Flex direction="column" gap={8}>{footer}</Flex> : null}
+        {footer ? (
+          <Flex direction="column" gap={8}>
+            {footer}
+          </Flex>
+        ) : null}
       </Flex>
     </Panel>
   )
