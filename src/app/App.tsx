@@ -21,7 +21,14 @@ function AppLayout() {
         align="center"
         justify="center"
         gap={12}
-        className="h-screen"
+        style={{
+          width: '100%',
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <Spinner />
         <Typography.Body>Загрузка сессии…</Typography.Body>
@@ -36,7 +43,16 @@ function AppLayout() {
         align="center"
         justify="center"
         gap={12}
-        className="h-screen p-6"
+        style={{
+          width: '100%',
+          height: '100vh',
+          padding: '24px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <Typography.Title>Не удалось получить сессию</Typography.Title>
         <Button mode="primary" onClick={() => refetch()}>
@@ -55,7 +71,7 @@ function AppLayout() {
   }
 
   return (
-    <div className="h-full min-h-screen">
+    <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Outlet />
     </div>
   )
