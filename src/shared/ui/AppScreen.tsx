@@ -11,8 +11,12 @@ export function AppScreen({
   footer?: ReactNode
 }) {
   return (
-    <Panel mode="secondary" style={{ minHeight: '100%', boxSizing: 'border-box' }}>
-      <Flex direction="column" gap={16} style={{ padding: 16, maxWidth: 560, margin: '0 auto' }}>
+    <Panel mode="secondary" className="box-border min-h-full h-full">
+      <Flex
+        direction="column"
+        gap={16}
+        className="mx-auto h-full min-h-full max-w-[560px] p-4"
+      >
         <Typography.Headline>{title}</Typography.Headline>
         <Flex direction="column" gap={12} style={{ flex: 1 }}>
           {children}

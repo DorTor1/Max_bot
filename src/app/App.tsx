@@ -21,7 +21,7 @@ function AppLayout() {
         align="center"
         justify="center"
         gap={12}
-        style={{ minHeight: '100vh' }}
+        className="h-screen"
       >
         <Spinner />
         <Typography.Body>Загрузка сессии…</Typography.Body>
@@ -36,7 +36,7 @@ function AppLayout() {
         align="center"
         justify="center"
         gap={12}
-        style={{ minHeight: '100vh', padding: 24 }}
+        className="h-screen p-6"
       >
         <Typography.Title>Не удалось получить сессию</Typography.Title>
         <Button mode="primary" onClick={() => refetch()}>
@@ -54,7 +54,11 @@ function AppLayout() {
     return <Navigate to="/" replace />
   }
 
-  return <Outlet />
+  return (
+    <div className="h-full min-h-screen">
+      <Outlet />
+    </div>
+  )
 }
 
 function AdminOutlet() {
