@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: passbot
+      POSTGRES_PASSWORD: passbot
+      POSTGRES_DB: passbot
+    ports:
+      - "5433:5432"
+    volumes:
+      - passbot_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U passbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  passbot_pg:
